@@ -1,0 +1,8 @@
+# Ingestion worker image: full dependencies, runs the TypeScript worker with tsx.
+FROM node:22-alpine
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci || npm install
+COPY . .
+ENV NODE_ENV=production
+CMD ["npx", "tsx", "workers/ingest.ts"]

@@ -1,0 +1,50 @@
+{
+  "info": {
+    "name": "DocuMind API v1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Every request needs a signed-in session. Copy your __session cookie (or a Clerk session token) into the Authorization header."
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "uploadKey", "value": "" },
+    { "key": "uploadUrl", "value": "" },
+    { "key": "conversationId", "value": "" }
+  ],
+  "item": [
+    { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/api/health" } },
+    {
+      "name": "List documents",
+      "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/v1/documents?limit=10", "host": ["{{baseUrl}}"], "path": ["api", "v1", "documents"], "query": [{ "key": "limit", "value": "10" }] } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('200', () => pm.response.to.have.status(200));", "pm.test('has data array', () => pm.expect(pm.response.json().data).to.be.an('array'));"] } }]
+    },
+    {
+      "name": "1. Create upload intent",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/documents/upload-intents", "body": { "mode": "raw", "raw": "{\n  \"filename\": \"notes.txt\",\n  \"size\": 42,\n  \"mime\": \"text/plain\"\n}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["const j = pm.response.json();", "pm.collectionVariables.set('uploadKey', j.key);", "pm.collectionVariables.set('uploadUrl', j.uploadUrl);", "pm.test('intent issued', () => pm.expect(j.uploadUrl).to.include('/api/v1/uploads/'));"] } }]
+    },
+    {
+      "name": "2. Upload bytes (PUT)",
+      "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/octet-stream" }], "url": "{{baseUrl}}{{uploadUrl}}", "body": { "mode": "raw", "raw": "Hello DocuMind. This is a plain text test document." } }
+    },
+    {
+      "name": "3. Register document",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/documents", "body": { "mode": "raw", "raw": "{\n  \"key\": \"{{uploadKey}}\",\n  \"title\": \"Postman test document\"\n}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('201', () => pm.response.to.have.status(201));"] } }]
+    },
+    {
+      "name": "Search",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/search", "body": { "mode": "raw", "raw": "{\n  \"query\": \"termination notice period\"\n}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('returns results', () => pm.expect(pm.response.json().results.length).to.be.above(0));"] } }]
+    },
+    {
+      "name": "Create conversation",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/assistant/conversations", "body": { "mode": "raw", "raw": "{}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('conversationId', pm.response.json().id);"] } }]
+    },
+    {
+      "name": "Ask a question",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/api/v1/assistant/conversations/{{conversationId}}/messages", "body": { "mode": "raw", "raw": "{\n  \"question\": \"How long must we keep invoices?\"\n}" } },
+      "event": [{ "listen": "test", "script": { "exec": ["const j = pm.response.json();", "pm.test('has citations or abstains', () => pm.expect(j.citations.length > 0 || j.insufficientEvidence).to.be.true);"] } }]
+    }
+  ]
+}

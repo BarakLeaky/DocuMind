@@ -1,0 +1,11 @@
+---
+description: DocuMind project conventions
+alwaysApply: true
+---
+- Read CLAUDE.md first; it lists commands and the architecture rules.
+- Stack: Next.js 16 App Router, TypeScript strict, Tailwind v4 (theme tokens in app/globals.css), Drizzle + Postgres/pgvector, Clerk, zod.
+- Route handlers: `getTenant()` -> `requirePermission()` -> zod parse -> `lib/` service, wrapped in `handle()`.
+- Scope every tenant query by organization in SQL. Retrieval must filter by tenant/ACL/version before anything reaches an LLM. Citations are validated server-side.
+- Colors: use tokens (bg-panel, border-line, text-dim, text-brand) instead of hard-coded hex.
+- No sample or placeholder data. New accounts are empty; build empty states instead.
+- Add/adjust Vitest tests for logic changes.
