@@ -5,6 +5,7 @@ import { z } from "zod";
 import { getTenant, requirePermission } from "@/lib/auth";
 import { deleteDocument, getReview, reviewField } from "@/lib/data";
 import { reextractDocument } from "@/lib/ai/reextract";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { approveAllPending } from "@/lib/review-center";
 import { audit } from "@/lib/tenancy";
 
@@ -78,6 +79,7 @@ export async function reextractAction(raw: { documentId: string }) {
   const documentId = docId.parse(raw.documentId);
   const tenant = await getTenant();
   requirePermission(tenant, "extraction.run");
+  await enforceRateLimit(tenant, "ai");
   const result = await reextractDocument(tenant, documentId);
   await audit(tenant, "document.reextracted", "document", documentId, { fields: result.fields, model: result.model });
   revalidatePath("/dashboard");
