@@ -9,6 +9,7 @@ import { getStorageUsage, listDocuments } from "@/lib/data";
 import { env } from "@/lib/env";
 import { AppError, handle, notFound } from "@/lib/errors";
 import { PIPELINE_VERSION, runJobById } from "@/lib/ingest";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { detectFileType, safeTenant, storage } from "@/lib/storage";
 import { audit, ensureWorkspace } from "@/lib/tenancy";
 
@@ -43,6 +44,12 @@ export const POST = handle(async (req) => {
   // The key must belong to this tenant; otherwise someone could register another tenant's upload.
   if (!input.key.startsWith(`${safeTenant(tenant.tenantKey)}/`)) throw notFound("Uploaded object");
   if (!(await storage.exists(input.key))) throw notFound("Uploaded object");
+  try {
+    await enforceRateLimit(tenant, "upload");
+  } catch (err) {
+    await storage.deleteObjects([input.key]); // don't keep a file we are refusing to register
+    throw err;
+  }
   const bytes = await storage.getObject(input.key);
 
   const reject = async (err: AppError) => {

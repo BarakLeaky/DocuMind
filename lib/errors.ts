@@ -10,10 +10,14 @@ export const unauthorized = () => new AppError("unauthorized", 401, "Authenticat
 export const forbidden = (p?: string) => new AppError("forbidden", 403, p ? `Missing permission: ${p}` : "Forbidden");
 export const notFound = (what = "Resource") => new AppError("not_found", 404, `${what} not found`);
 export const quotaExceeded = (msg: string) => new AppError("quota_exceeded", 413, msg);
+export const rateLimited = (msg: string, retryAfterSeconds: number) => new AppError("rate_limited", 429, msg, { retryAfterSeconds });
 
 export function errorResponse(err: unknown) {
   if (err instanceof AppError) {
-    return NextResponse.json({ error: { code: err.code, message: err.message, details: err.details } }, { status: err.status });
+    const headers: Record<string, string> = {};
+    const retry = (err.details as { retryAfterSeconds?: unknown } | undefined)?.retryAfterSeconds;
+    if (err.code === "rate_limited" && typeof retry === "number") headers["Retry-After"] = String(retry);
+    return NextResponse.json({ error: { code: err.code, message: err.message, details: err.details } }, { status: err.status, headers });
   }
   if (err instanceof ZodError) {
     return NextResponse.json(

@@ -19,4 +19,7 @@ export const env = {
   /** Vercel functions accept request bodies up to 4.5 MB, so 4 MB is the safe default. */
   MAX_UPLOAD_MB: num("MAX_UPLOAD_MB", 4),
   STORAGE_QUOTA_MB: num("STORAGE_QUOTA_MB", 500),
+  /** Per-user hourly caps. They protect your AI bill once other people can sign up. */
+  RATE_LIMIT_AI_PER_HOUR: num("RATE_LIMIT_AI_PER_HOUR", 30),
+  RATE_LIMIT_UPLOADS_PER_HOUR: num("RATE_LIMIT_UPLOADS_PER_HOUR", 20),
 };
