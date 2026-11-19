@@ -126,7 +126,6 @@ async function callTool<T>(client: Anthropic, tool: typeof extractionTool | type
   const msg = await client.messages.create({
     model: env.ANTHROPIC_MODEL,
     max_tokens: maxTokens,
-    temperature: 0,
     system,
     tools: [tool],
     tool_choice: { type: "tool", name: tool.name },
