@@ -10,6 +10,8 @@ describe("parseMoney", () => {
     expect(parseMoney("$76,125.00")).toBe(76125);
     expect(parseMoney("1.200,50 EUR")).toBe(1200.5);
     expect(parseMoney("KES 1,200")).toBe(1200);
+    expect(parseMoney("KES 1,200,000")).toBe(1200000);
+    expect(parseMoney("12,50")).toBe(12.5);
     expect(parseMoney("n/a")).toBeNull();
   });
 });

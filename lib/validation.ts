@@ -26,11 +26,18 @@ export function findField<T extends { label: string }>(fields: T[], ...patterns:
 export function parseMoney(raw: string): number | null {
   const m = raw.replace(/\s/g, "").match(/-?\d[\d.,]*/);
   if (!m) return null;
-  let s = m[0];
+  let s = m[0].replace(/[.,]+$/, ""); // drop trailing punctuation, e.g. "KES 1,200."
   const lastComma = s.lastIndexOf(",");
   const lastDot = s.lastIndexOf(".");
-  if (lastComma > lastDot) s = s.replace(/\./g, "").replace(",", "."); // European style
-  else s = s.replace(/,/g, "");
+  if (lastComma >= 0 && lastDot >= 0) {
+    // Both present: whichever comes last is the decimal separator.
+    s = lastComma > lastDot ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  } else if (lastComma >= 0) {
+    // "1,200" and "1,200,000" are thousands groups; "12,50" is a decimal comma.
+    s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, "") : s.replace(",", ".");
+  } else if ((s.match(/\./g) ?? []).length > 1) {
+    s = s.replace(/\./g, ""); // "1.200.000"
+  }
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
 }
